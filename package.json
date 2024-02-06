@@ -1,0 +1,35 @@
+{
+  "devDependencies": {
+    "parcel": "^2.11.0",
+    "process": "^0.11.10"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.1.0",
+    "moment": "^2.30.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-redux": "^9.1.0",
+    "react-router-dom": "^6.22.0"
+  },
+  "name": "craft-assigment-frontend",
+  "version": "1.0.0",
+  "description": "Craft Assignment Frontend",
+  "main": "App.js",
+  "scripts": {
+    "start": "parcel index.html",
+    "build": "parcel build index.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "proxy": "http://localhost:8082",
+  "repository": {
+    "type": "git",
+    "url": "craft-frontend"
+  },
+  "keywords": [
+    "react",
+    "javascript",
+    "html"
+  ],
+  "author": "Rishik Varma",
+  "license": "ISC"
+}
