@@ -8,15 +8,16 @@ const JobInfo = ({reRender, jobStatusHandler}) => {
     const [data, setData] = useState(null);
     const [secs, setSecs] = useState(0);
     const [jobState, setJobState] = useState(OPEN_JOB_STATUS);
+    const [winner, setWinner] = useState(null);
+    const [minimumBiddingAmount, setMinimumBiddingAmount] = useState(Number.MAX_VALUE);
+    const [numberOfBids, setNumberOfBids] = useState(0);
 
     useEffect(() => {
         fetchData();
     }, [reRender]);
 
     useEffect(() => {
-        console.log("secs", secs);
         if(secs <=0 && data?.jobStatus === OPEN_JOB_STATUS) {
-            console.log("updating", secs, data);
             updateJob(jobId);
         }
 
@@ -38,12 +39,40 @@ const JobInfo = ({reRender, jobStatusHandler}) => {
 
     }, [jobState]);
 
+    useEffect(() => {
+        const eventSource = new EventSource('http://localhost:8082/jobs/' + jobId);
+        eventSource.addEventListener('open', () => {});
+          
+        eventSource.addEventListener('event-test', (event) => {
+            const eventData = JSON.parse(event.data);
+
+            setNumberOfBids(eventData?.numberOfBids);
+            setMinimumBiddingAmount(eventData?.minimumBiddingAmount);
+            setWinner(eventData?.winner);
+        });
+          
+        eventSource.addEventListener('error', (err) => {
+            eventSource.close();
+        });
+
+        return () => {
+            console.log("event closed");
+            eventSource.close();
+        }
+
+    },[]);
+
     const fetchData = async () => {
         const jobData = await fetch (url);
         const jsonData = await jobData.json();
-        const timeRem = await jsonData?.body?.auctionExpiryTime;
-        const jobStatus = await jsonData?.body?.jobStatus;
-        setData(jsonData?.body);
+        const body = await jsonData?.body;
+        const timeRem = body?.auctionExpiryTime;
+        const jobStatus = body?.jobStatus;
+
+        setData(body);
+        setMinimumBiddingAmount(body?.bids[0]?.biddingAmount);
+        setWinner(body.bids[0]?.bidder?.username);
+        setNumberOfBids(body?.numberOfBids);
         setSecs(getTimeDiff(timeRem));
         setJobState(jobStatus);
     };
@@ -77,8 +106,12 @@ const JobInfo = ({reRender, jobStatusHandler}) => {
             });
 
             const jsonResponse = await response.json();
-            const jobState = await jsonResponse?.body?.jobStatus;
-            setData(jsonResponse?.body);
+            const body = await jsonResponse?.body;
+            const jobState = body?.jobStatus;
+            setData(body);
+            setMinimumBiddingAmount(body?.bids[0]?.biddingAmount);
+            setWinner(body?.bids[0]?.bidder?.username);
+            setNumberOfBids(body?.numberOfBids);
             setJobState(jobState);
 
         } catch (error) {
@@ -93,11 +126,11 @@ const JobInfo = ({reRender, jobStatusHandler}) => {
             <p><b>Requirements:</b>{data?.requirements}</p>
             <p><b>Recruiter Info:</b>{data?.nameOfRecruiter}</p>
             <p><b>Recruiter Contact Info:</b>{data?.recruiterContact}</p>
-            <p><b>Number Of Bids:</b>{data?.numberOfBids}</p>
-            {data?.numberOfBids > 0 && <p><b>Minimum Bid: </b>{data?.bids[0]?.biddingAmount}</p>}
+            <p><b>Number Of Bids:</b>{numberOfBids}</p>
+            {data?.numberOfBids > 0 && <p><b>Minimum Bid: </b>{minimumBiddingAmount}</p>}
             <p><b>Auction Expiry Time: </b>{data?.auctionExpiryTime}</p>
             {secs > 0 && <p><b>Time Remaining To Auction Expiry: </b>{getTimeStr(secs)}</p>}
-            {secs <= 0 && <p><b>Winnner: </b>{data?.bids[0]?.bidder?.username}</p>} 
+            {secs <= 0 && <p><b>Winnner: </b>{winner}</p>} 
         </div>
     );
 };

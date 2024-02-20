@@ -44668,17 +44668,16 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
     const [data, setData] = (0, _react.useState)(null);
     const [secs, setSecs] = (0, _react.useState)(0);
     const [jobState, setJobState] = (0, _react.useState)((0, _constants.OPEN_JOB_STATUS));
+    const [winner, setWinner] = (0, _react.useState)(null);
+    const [minimumBiddingAmount, setMinimumBiddingAmount] = (0, _react.useState)(Number.MAX_VALUE);
+    const [numberOfBids, setNumberOfBids] = (0, _react.useState)(0);
     (0, _react.useEffect)(()=>{
         fetchData();
     }, [
         reRender
     ]);
     (0, _react.useEffect)(()=>{
-        console.log("secs", secs);
-        if (secs <= 0 && data?.jobStatus === (0, _constants.OPEN_JOB_STATUS)) {
-            console.log("updating", secs, data);
-            updateJob(jobId);
-        }
+        if (secs <= 0 && data?.jobStatus === (0, _constants.OPEN_JOB_STATUS)) updateJob(jobId);
         if (secs <= 0) return;
         const timeout = setTimeout(()=>{
             setSecs(secs - 1);
@@ -44692,12 +44691,33 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
     }, [
         jobState
     ]);
+    (0, _react.useEffect)(()=>{
+        const eventSource = new EventSource("http://localhost:8082/jobs/" + jobId);
+        eventSource.addEventListener("open", ()=>{});
+        eventSource.addEventListener("event-test", (event)=>{
+            const eventData = JSON.parse(event.data);
+            setNumberOfBids(eventData?.numberOfBids);
+            setMinimumBiddingAmount(eventData?.minimumBiddingAmount);
+            setWinner(eventData?.winner);
+        });
+        eventSource.addEventListener("error", (err)=>{
+            eventSource.close();
+        });
+        return ()=>{
+            console.log("event closed");
+            eventSource.close();
+        };
+    }, []);
     const fetchData = async ()=>{
         const jobData = await fetch(url);
         const jsonData = await jobData.json();
-        const timeRem = await jsonData?.body?.auctionExpiryTime;
-        const jobStatus = await jsonData?.body?.jobStatus;
-        setData(jsonData?.body);
+        const body = await jsonData?.body;
+        const timeRem = body?.auctionExpiryTime;
+        const jobStatus = body?.jobStatus;
+        setData(body);
+        setMinimumBiddingAmount(body?.bids[0]?.biddingAmount);
+        setWinner(body.bids[0]?.bidder?.username);
+        setNumberOfBids(body?.numberOfBids);
         setSecs(getTimeDiff(timeRem));
         setJobState(jobStatus);
     };
@@ -44730,8 +44750,12 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                 body: JSON.stringify(data)
             });
             const jsonResponse = await response.json();
-            const jobState = await jsonResponse?.body?.jobStatus;
-            setData(jsonResponse?.body);
+            const body = await jsonResponse?.body;
+            const jobState = body?.jobStatus;
+            setData(body);
+            setMinimumBiddingAmount(body?.bids[0]?.biddingAmount);
+            setWinner(body?.bids[0]?.bidder?.username);
+            setNumberOfBids(body?.numberOfBids);
             setJobState(jobState);
         } catch (error) {
             console.log(error);
@@ -44746,14 +44770,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Title:"
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 91,
+                        lineNumber: 124,
                         columnNumber: 16
                     }, undefined),
                     data?.title
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 91,
+                lineNumber: 124,
                 columnNumber: 13
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44762,14 +44786,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Descritpion: "
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 92,
+                        lineNumber: 125,
                         columnNumber: 16
                     }, undefined),
                     data?.description
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 92,
+                lineNumber: 125,
                 columnNumber: 13
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44778,14 +44802,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Requirements:"
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 93,
+                        lineNumber: 126,
                         columnNumber: 16
                     }, undefined),
                     data?.requirements
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 93,
+                lineNumber: 126,
                 columnNumber: 13
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44794,14 +44818,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Recruiter Info:"
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 94,
+                        lineNumber: 127,
                         columnNumber: 16
                     }, undefined),
                     data?.nameOfRecruiter
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 94,
+                lineNumber: 127,
                 columnNumber: 13
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44810,14 +44834,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Recruiter Contact Info:"
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 95,
+                        lineNumber: 128,
                         columnNumber: 16
                     }, undefined),
                     data?.recruiterContact
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 95,
+                lineNumber: 128,
                 columnNumber: 13
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44826,14 +44850,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Number Of Bids:"
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 96,
+                        lineNumber: 129,
                         columnNumber: 16
                     }, undefined),
-                    data?.numberOfBids
+                    numberOfBids
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 96,
+                lineNumber: 129,
                 columnNumber: 13
             }, undefined),
             data?.numberOfBids > 0 && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44842,14 +44866,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Minimum Bid: "
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 97,
+                        lineNumber: 130,
                         columnNumber: 43
                     }, undefined),
-                    data?.bids[0]?.biddingAmount
+                    minimumBiddingAmount
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 97,
+                lineNumber: 130,
                 columnNumber: 40
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44858,14 +44882,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Auction Expiry Time: "
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 98,
+                        lineNumber: 131,
                         columnNumber: 16
                     }, undefined),
                     data?.auctionExpiryTime
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 98,
+                lineNumber: 131,
                 columnNumber: 13
             }, undefined),
             secs > 0 && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44874,14 +44898,14 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Time Remaining To Auction Expiry: "
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 99,
+                        lineNumber: 132,
                         columnNumber: 29
                     }, undefined),
                     getTimeStr(secs)
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 99,
+                lineNumber: 132,
                 columnNumber: 26
             }, undefined),
             secs <= 0 && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -44890,24 +44914,24 @@ const JobInfo = ({ reRender, jobStatusHandler })=>{
                         children: "Winnner: "
                     }, void 0, false, {
                         fileName: "src/components/JobInfo.js",
-                        lineNumber: 100,
+                        lineNumber: 133,
                         columnNumber: 30
                     }, undefined),
-                    data?.bids[0]?.bidder?.username
+                    winner
                 ]
             }, void 0, true, {
                 fileName: "src/components/JobInfo.js",
-                lineNumber: 100,
+                lineNumber: 133,
                 columnNumber: 27
             }, undefined)
         ]
     }, void 0, true, {
         fileName: "src/components/JobInfo.js",
-        lineNumber: 90,
+        lineNumber: 123,
         columnNumber: 9
     }, undefined);
 };
-_s(JobInfo, "FlmNBNpoLqTll1LHSIHn9WrILJo=", false, function() {
+_s(JobInfo, "r5GJ7oXSY3LI+3XAPWaijxV+8vQ=", false, function() {
     return [
         (0, _reactRouterDom.useParams)
     ];
